@@ -33,17 +33,25 @@
 			this.state = _deepFreeze( this.state );
 
 			return Object.freeze({
+				use: Object.freeze( this.use.bind( this ) ),
 				dispatch: Object.freeze( this.dispatch.bind( this ) ),
 				subscribe: Object.freeze( this.subscribe.bind( this ) ),
 				unsubscribe: Object.freeze( this.unsubscribe.bind( this ) ),
 			});
+		}
+		use( callback ) {
+			callback( this.state );
 		}
 		dispatch( name, args ) {
 			if ( !this.actions.hasOwnProperty( name ) ) {
 				throw 'incorrect state action';
 			}
 
-			const updated = this.actions[ name ]( this.state, args );
+			let updated = this.actions[ name ]( this.state, args );
+
+			if ( updated === undefined ) return;
+
+			updated = _deepFreeze( updated );
 
 			for ( const selector in this.selectors ) {
 				const selected = this.selectors[ selector ]( updated );
@@ -57,7 +65,7 @@
 				}
 			}
 
-			this.state = _deepFreeze( updated );
+			this.state = updated;
 		}
 		subscribe( selector, listener ) {
 			if ( !this.selectors.hasOwnProperty( selector ) ) {
