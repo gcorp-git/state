@@ -60,8 +60,10 @@
 
 				this.cache[ selector ] = selected;
 
-				for ( const listener of this.listeners[ selector ] ) {
-					listener( this.cache[ selector ] );
+				if ( this.listeners[ selector ] instanceof Array ) {
+					for ( const listener of this.listeners[ selector ] ) {
+						listener( this.cache[ selector ] );
+					}
 				}
 			}
 
