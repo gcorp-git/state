@@ -5,6 +5,7 @@
 		actions = {};
 		selectors = {};
 		listeners = {};
+		middlewares = undefined;
 		cache = {};
 		state = {};
 		constructor({ defaults, actions, selectors }) {
@@ -30,6 +31,7 @@
 				}
 			}
 
+			this.middlewares = new Set();
 			this.state = _deepFreeze( this.state );
 
 			return Object.freeze({
@@ -37,6 +39,8 @@
 				dispatch: Object.freeze( this.dispatch.bind( this ) ),
 				subscribe: Object.freeze( this.subscribe.bind( this ) ),
 				unsubscribe: Object.freeze( this.unsubscribe.bind( this ) ),
+				setMiddleware: Object.freeze( this.setMiddleware.bind( this ) ),
+				unsetMiddleware: Object.freeze( this.unsetMiddleware.bind( this ) ),
 			});
 		}
 		use( callback ) {
@@ -52,6 +56,10 @@
 			if ( updated === undefined ) return;
 
 			updated = _deepFreeze( updated );
+
+			for ( const middleware of this.middlewares ) {
+				middleware( name, updated );
+			}
 
 			for ( const selector in this.selectors ) {
 				const selected = this.selectors[ selector ]( updated );
@@ -70,9 +78,8 @@
 			this.state = updated;
 		}
 		subscribe( selector, listener ) {
-			if ( !this.selectors.hasOwnProperty( selector ) ) {
-				throw 'incorrect state selector';
-			}
+			if ( !this.selectors.hasOwnProperty( selector ) ) throw 'incorrect state selector';
+			if ( typeof listener !== 'function' ) throw 'incorrect subscriber';
 
 			if ( !this.listeners[ selector ] ) this.listeners[ selector ] = [];
 
@@ -103,6 +110,14 @@
 
 			this.listeners[ selector ][ index ] = this.listeners[ selector ][ length - 1 ];
 			this.listeners[ selector ].length = length - 1;
+		}
+		setMiddleware( middleware ) {
+			if ( typeof middleware !== 'function' ) throw 'incorrect middleware';
+
+			this.middlewares.add( middleware );
+		}
+		unsetMiddleware( middleware ) {
+			this.middlewares.delete( middleware );
 		}
 	}
 
